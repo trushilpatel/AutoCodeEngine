@@ -167,6 +167,45 @@ make run FEATURE=auth MAX_AGENT_CALLS=20 SKIP_GATES=ux,performance
 
 ---
 
+### Test command
+
+`TEST_CMD` tells the engineer and QA agents what command to run to verify tests pass. It is injected into every agent prompt as `test_cmd`.
+
+**Leave it empty for auto-detection** — the engine detects your stack from files present at repo root:
+
+| Detected file | Auto-detected command |
+|---------------|-----------------------|
+| `package.json` | `npm test` |
+| `pytest.ini` / `pyproject.toml` | `pytest -x -q` |
+| `go.mod` | `go test ./...` |
+| `Gemfile` | `bundle exec rspec` |
+
+**Set it explicitly** when auto-detection would pick the wrong thing, or when you want to run multiple layers:
+
+```bash
+# Go only
+TEST_CMD=go test ./...
+
+# Go + frontend lint in one command
+TEST_CMD=make test
+
+# Python
+TEST_CMD=pytest -x -q
+
+# Node
+TEST_CMD=npm test
+
+# Multiple stacks via a Makefile target (recommended for monorepos)
+TEST_CMD=make test
+```
+
+**Rules:**
+- Must run from the repo root
+- Non-zero exit code = test failure (loop-back triggered)
+- Keep it fast — the engineer gate runs it after every implementation attempt
+
+---
+
 ### Gates
 
 Each gate maps to one agent. Use `SKIP_GATES` to bypass gates not relevant to your project type.
