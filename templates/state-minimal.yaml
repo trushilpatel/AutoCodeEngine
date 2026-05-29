@@ -1,0 +1,23 @@
+# features/SLUG/state.md — case file. Agents read and write this.
+feature_slug: SLUG
+branch: feature/SLUG
+status: in_progress
+current_step: prd_linter
+
+prd_linter: {status: pending}
+architect: {status: pending, confidence: null}
+engineer: {status: pending, confidence: null}
+qa: {status: pending, mutation_score: null, coverage: null}
+ux: {status: pending, p0_count: null, p1_count: null}
+performance: {status: pending, p95_ms: null, p99_ms: null, error_rate: null}
+cicd: {status: pending}
+red_team: {status: pending, p0_count: null, p1_count: null, regression_tests: 0}
+push_to_pr: {status: pending, pr_url: null}
+
+loop_backs: {prd_linter: 0, architect: 0, engineer: 0, qa: 0, ux: 0, performance: 0, cicd: 0, red_team: 0}
+escalations: []
+assumptions: []
+decisions: []
+decision_requests: []
+human_action_required: null
+metrics: {loop_back_total: 0, human_interventions: 0, escalations_total: 0}
