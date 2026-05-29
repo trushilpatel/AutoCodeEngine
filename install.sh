@@ -167,17 +167,45 @@ echo ""
 
 # ─── Step 4: Support files ────────────────────────────────────────────────────
 if [[ "$SUBMODULE_MODE" == "true" ]]; then
-  echo "[ 4/6 ] Submodule mode — scripts/kb/templates stay inside ${FACTORY_REL}/"
-  echo "        (factory.mk auto-resolves paths; nothing copied to repo root)"
+  echo "[ 4/6 ] Submodule mode — engine files stay inside ${FACTORY_REL}/"
+  echo "        Creating project-owned directories at repo root..."
 
-  # Just ensure features/ exists at repo root for PRD editing convenience
+  # features/ at repo root — PRDs and state are project artifacts
   mkdir -p "$REPO_ROOT/features"
   touch "$REPO_ROOT/features/.gitkeep"
-  ok "features/ created at repo root (for PRDs)"
+  ok "features/ ready at repo root"
 
-  # Ensure scripts in factory are executable
+  # kb/ at repo root — PROJECT knowledge base (committed to your repo, not the engine)
+  if [[ ! -d "$REPO_ROOT/kb" ]]; then
+    mkdir -p "$REPO_ROOT/kb"
+    cat > "$REPO_ROOT/kb/INDEX.md" << 'KBEOF'
+# Knowledge Base — Project Index
+
+This is your **project-specific** knowledge base, committed to this repository
+and shared with your whole team.
+
+AutoCodeEngine's Steward writes project-specific learnings here after each feature
+merges. Learnings that apply to any codebase are proposed as PRs to the
+AutoCodeEngine engine KB instead.
+
+## How to use
+
+Agents read this index first, then load at most 2 files from the entries below.
+Never scan the kb/ directory directly — always go through this index.
+
+## Entries
+
+<!-- Steward will populate this as learnings are added. -->
+<!-- Format: - [domain/file.md](domain/file.md) — one-line description -->
+KBEOF
+    ok "kb/ created at repo root with starter INDEX.md"
+  else
+    ok "kb/ already exists at repo root — skipping"
+  fi
+
+  # Ensure engine scripts are executable
   find "$FACTORY_DIR/scripts" -name "*.sh" -exec chmod +x {} \;
-  ok "chmod +x on factory scripts"
+  ok "chmod +x on engine scripts"
 else
   echo "[ 4/6 ] Standalone mode — copying support files to repo root..."
 
