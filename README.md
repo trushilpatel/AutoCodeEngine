@@ -134,31 +134,95 @@ make steward FEATURE=user-authentication
 
 ## Configuration
 
-All config lives in `.factory.env` (gitignored). See `.factory.env.example` for all options.
+All config lives in `.factory.env` (gitignored, never committed). Copy the example and edit:
 
-**Models**
 ```bash
-MODEL_HAIKU=claude-haiku-4-5
-MODEL_SONNET=claude-sonnet-4-5
-MODEL_OPUS=claude-opus-4-6
+cp tools/autocode/.factory.env.example .factory.env
 ```
 
-**Loop controls**
+Any variable can be overridden per-run without editing the file:
+
 ```bash
-MAX_LOOP_BACKS=3     # retries per gate before pausing for human input
-MAX_AGENT_CALLS=50   # hard ceiling on total agent calls per feature run
+make run FEATURE=auth MAX_AGENT_CALLS=20 SKIP_GATES=ux,performance
 ```
 
-**Project settings**
+---
+
+### Models
+
+| Variable | Default | Used by |
+|----------|---------|---------|
+| `MODEL_HAIKU` | `claude-haiku-4-5` | prd_linter, ux, cicd, push_to_pr, steward |
+| `MODEL_SONNET` | `claude-sonnet-4-5` | engineer, qa, performance, red_team |
+| `MODEL_OPUS` | `claude-opus-4-6` | architect (called once per feature) |
+
+---
+
+### Loop limits
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `MAX_LOOP_BACKS` | `3` | Retries allowed per gate before the loop pauses for human input |
+| `MAX_AGENT_CALLS` | `50` | Hard ceiling on total agent calls per feature run — a clean run uses ~11–15 |
+
+---
+
+### Gates
+
+Each gate maps to one agent. Use `SKIP_GATES` to bypass gates not relevant to your project type.
+
+| Gate | Model | What it does |
+|------|-------|--------------|
+| `prd_linter` | Haiku | Validates PRD completeness before any code work starts |
+| `architect` | Opus | Produces ADR: data models, API contracts, security model |
+| `engineer` | Sonnet | TDD — writes failing tests first, then implements to pass them |
+| `qa` | Sonnet | Full test suite + mutation testing (≥70% threshold) |
+| `ux` | Haiku | Reviews UI/API ergonomics, accessibility, error messages |
+| `performance` | Sonnet | k6 load tests against `BASE_URL`; enforces p95/p99/error budgets |
+| `cicd` | Haiku | Sets up or validates CI pipeline |
+| `red_team` | Sonnet | Security review from PRD only — no implementation context |
+| `push_to_pr` | Haiku | Creates branch, commits, pushes, opens GitHub PR |
+
+**Common presets:**
+
 ```bash
-BASE_URL=http://localhost:3000    # k6 load tests target
-TEST_CMD=                         # leave empty for auto-detection
-SKIP_GATES=ux,performance         # skip gates not relevant to your project
+SKIP_GATES=                          # run everything — recommended for production features
+SKIP_GATES=performance,red_team      # fast iteration — saves ~6–8 agent calls
+SKIP_GATES=ux                        # backend-only features
+SKIP_GATES=ux,performance            # API-only or CLI features
+SKIP_GATES=performance,red_team,cicd # early prototype
 ```
 
-Any variable can be overridden per-run:
+---
+
+### Performance budgets
+
+Only enforced when the `performance` gate runs. Units: milliseconds for latency, ratio for error rate, KB for bundle size.
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `PERF_P95_MS` | `300` | 95th percentile response time ceiling (ms) |
+| `PERF_P99_MS` | `1000` | 99th percentile response time ceiling (ms) |
+| `PERF_ERROR_RATE` | `0.01` | Max HTTP error rate under load (1%) |
+| `PERF_BUNDLE_KB` | `20` | Frontend JS bundle size limit (KB) |
+
+---
+
+### Per-agent turn limits
+
+Uncomment in `.factory.env` to cap how many turns a specific agent can take. Useful if one agent keeps hitting its ceiling.
+
 ```bash
-make run FEATURE=auth MAX_AGENT_CALLS=30 SKIP_GATES=ux
+# TURNS_PRD_LINTER=5
+# TURNS_ARCHITECT=15
+# TURNS_ENGINEER=20
+# TURNS_QA=20
+# TURNS_UX=10
+# TURNS_PERFORMANCE=15
+# TURNS_CICD=6
+# TURNS_RED_TEAM=25
+# TURNS_PUSH_TO_PR=8
+# TURNS_STEWARD=15
 ```
 
 ---
